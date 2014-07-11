@@ -9,11 +9,15 @@ import (
 //	"github.com/acidlemon/go-dumper"
 )
 
-type Handler func(*Context)
+type Handler func(CtxData)
+
+type CtxBuilder func(req *http.Request, view Renderer) CtxData
 
 type WebApp struct {
 	router urlrouter.URLRouter
 	routes map[string]*bindObject
+	server *http.Server
+	ctxBuilder CtxBuilder
 }
 
 type bindObject struct {
@@ -21,15 +25,18 @@ type bindObject struct {
 	View Renderer
 }
 
-func (b *bindObject) HandleRequest(c *Context) {
+func (b *bindObject) HandleRequest(c CtxData) {
 	fmt.Println("HandleRequest Called")
 	b.Method(c)
 }
 
-
 func NewWebApp() *WebApp {
 	app := new(WebApp)
 	return app.Init()
+}
+
+func (app *WebApp) SetContextBuilder(f CtxBuilder) {
+	app.ctxBuilder = f
 }
 
 func (app *WebApp) Init() *WebApp {
@@ -37,11 +44,12 @@ func (app *WebApp) Init() *WebApp {
 
 	app.router = router
 	app.routes = make(map[string]*bindObject)
+	app.ctxBuilder = NewContext
 
 	return app
 }
 
-func (app *WebApp) AddRoute(path string, bind func(*Context), view Renderer) {
+func (app *WebApp) AddRoute(path string, bind Handler, view Renderer) {
 	app.routes[path] = &bindObject{bind, view}
 }
 
@@ -56,30 +64,23 @@ func (app *WebApp) BuildRouter() {
 	app.router.Build(records)
 }
 
-
-func (app* WebApp) Start(listener net.Listener) {
-	http.HandleFunc("/", app.handler)
-	http.Serve(listener, nil)
+func (app *WebApp) Start(listener net.Listener) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", app.handler)
+	app.server = &http.Server{Handler: mux}
+	app.server.Serve(listener)
 }
-
 
 func (app *WebApp) handler(w http.ResponseWriter, req *http.Request) {
 	bind, _ := app.router.Lookup(req.URL.Path)
 
-	// TODO Context Generatorを外から渡せるようにする(デフォルト実装は提供)
-	c := &Context{
-		Req: req,
-		Res: &Response{
-			StatusCode: 404,
-		},
-		View: bind.(*bindObject).View,
-		Stash: map[string]interface{}{},
-	}
+	var c CtxData
+	c = app.ctxBuilder(req, bind.(*bindObject).View)
 
 	bind.(*bindObject).HandleRequest(c)
 
 	// write response
-	c.Res.Write(&w)
+	c.Res().Write(&w)
 }
 
 
