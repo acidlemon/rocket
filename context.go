@@ -26,7 +26,7 @@ type Context struct {
 	Stash map[string]interface{}
 }
 
-func NewContext(request *http.Request, renderer Renderer) ContextualData {
+func NewContext(request *http.Request, renderer Renderer) CtxData {
 	c := &Context{
 		req: request,
 		res: &Response{

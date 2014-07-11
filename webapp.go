@@ -1,7 +1,6 @@
 package rocket
 
 import (
-	"fmt"
 	"net"
 	"net/http"
 	"github.com/naoina/kocha-urlrouter"
@@ -26,7 +25,6 @@ type bindObject struct {
 }
 
 func (b *bindObject) HandleRequest(c CtxData) {
-	fmt.Println("HandleRequest Called")
 	b.Method(c)
 }
 
@@ -57,7 +55,6 @@ func (app *WebApp) BuildRouter() {
 	records := []urlrouter.Record{}
 
 	for k, v := range app.routes {
-		fmt.Printf("add %v\n", k)
 		records = append(records, urlrouter.NewRecord(k, v))
 	}
 
