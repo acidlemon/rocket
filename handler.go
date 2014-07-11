@@ -1,34 +1,29 @@
-package sixfold
+package rocket
 
 import (
 	"fmt"
 	"net"
 	"net/http"
 	"github.com/naoina/kocha-urlrouter"
-	_ "github.com/naoina/kocha-urlrouter/doublearray"
+	_ "github.com/naoina/kocha-urlrouter/tst"
+//	"github.com/acidlemon/go-dumper"
 )
 
-var theApp *WebApp
-
-type Handler func(w http.ResponseWriter, r *http.Request)
+type Handler func(*Context)
 
 type WebApp struct {
 	router urlrouter.URLRouter
-	routes map[string]route
+	routes map[string]*bindObject
 }
 
-type route struct {
-	c RequestHandler
-}
-
-type BindObject struct {
+type bindObject struct {
 	Method Handler
-//	w http.ResponseWriter
-//	r *http.Request
+	View Renderer
 }
 
-func (b *BindObject) HandleRequest(w http.ResponseWriter, r *http.Request) {
-	b.Method(w, r)
+func (b *bindObject) HandleRequest(c *Context) {
+	fmt.Println("HandleRequest Called")
+	b.Method(c)
 }
 
 
@@ -37,27 +32,25 @@ func NewWebApp() *WebApp {
 	return app.Init()
 }
 
-func (app *WebApp) Init() *WebApp{
-	router := urlrouter.NewURLRouter("doublearray")
+func (app *WebApp) Init() *WebApp {
+	router := urlrouter.NewURLRouter("tst")
 
 	app.router = router
-	app.routes = make(map[string]route)
-
-	theApp = app
+	app.routes = make(map[string]*bindObject)
 
 	return app
 }
 
-//func (app *WebApp) AddRoute(path string, c RequestHandler) {
-func (app *WebApp) AddRoute(path string, bind func(w http.ResponseWriter, r *http.Request)) {
-	app.routes[path] = route{ &BindObject{bind} }
+func (app *WebApp) AddRoute(path string, bind func(*Context), view Renderer) {
+	app.routes[path] = &bindObject{bind, view}
 }
 
 func (app *WebApp) BuildRouter() {
 	records := []urlrouter.Record{}
 
 	for k, v := range app.routes {
-		records = append(records, urlrouter.NewRecord(k, &v))
+		fmt.Printf("add %v\n", k)
+		records = append(records, urlrouter.NewRecord(k, v))
 	}
 
 	app.router.Build(records)
@@ -65,20 +58,28 @@ func (app *WebApp) BuildRouter() {
 
 
 func (app* WebApp) Start(listener net.Listener) {
-	http.HandleFunc("/", handler)
+	http.HandleFunc("/", app.handler)
 	http.Serve(listener, nil)
 }
 
-func handler(w http.ResponseWriter, req *http.Request) {
-	theApp.handler(w, req)
-}
 
 func (app *WebApp) handler(w http.ResponseWriter, req *http.Request) {
-	fmt.Println("req.URL.Path: ", req.URL.Path)
-	r, _ := app.router.Lookup(req.URL.Path)
-	fmt.Printf("%v\n", r.(*route).c.(*BindObject).Method)
+	bind, _ := app.router.Lookup(req.URL.Path)
 
-	r.(*route).c.HandleRequest(w, req)
+	// TODO Context Generatorを外から渡せるようにする(デフォルト実装は提供)
+	c := &Context{
+		Req: req,
+		Res: &Response{
+			StatusCode: 404,
+		},
+		View: bind.(*bindObject).View,
+		Stash: map[string]interface{}{},
+	}
+
+	bind.(*bindObject).HandleRequest(c)
+
+	// write response
+	c.Res.Write(&w)
 }
 
 
