@@ -2,6 +2,7 @@ package rocket
 
 import (
 	"testing"
+	"net/http"
 	"github.com/acidlemon/rocket"
 )
 
@@ -32,10 +33,12 @@ func (m *MockView) Render(tmpl string, data rocket.RenderVars) string {
 
 
 func DummyContext() *rocket.Context {
-	return &rocket.Context{
-		View: &MockView{},
-		Res: &rocket.Response{},
-	}
+	req := &http.Request{}
+	view := &MockView{}
+
+	c := rocket.NewContext(req, view)
+
+	return c.(*rocket.Context)
 }
 
 func TestRenderer(t *testing.T) {
@@ -43,31 +46,48 @@ func TestRenderer(t *testing.T) {
 
 	c.RenderText("powawa")
 
-	if c.Res.Body[0] != "powawapowawa" {
+	if c.Res().Body[0] != "powawapowawa" {
 		t.Fatal("RenderText failed")
 	}
 
 	c.RenderTexts([]string{"hoge", "powawa"})
 
-	if c.Res.Body[0] != "hogehoge" {
+	if c.Res().Body[0] != "hogehoge" {
 		t.Fatal("RenderTexts[0] is not hogehoge")
 	}
-	if c.Res.Body[1] != "powawapowawa" {
+	if c.Res().Body[1] != "powawapowawa" {
 		t.Fatal("RenderTexts[1] is not powawapowawa")
 	}
 
 	c.RenderJSON(rocket.RenderVars{ "Cat": "nya" })
 
-	if c.Res.Body[0] != "MockView.RenderJSON" {
+	if c.Res().Body[0] != "MockView.RenderJSON" {
 		t.Fatal("RenderJSON does not work properly")
 	}
 
 	c.Render("powawa", rocket.RenderVars{"Cat":"mya-"})
 
-	if c.Res.Body[0] != "MockView.Render(powawa)" {
+	if c.Res().Body[0] != "MockView.Render(powawa)" {
 		t.Fatal("Render does not work properly")
+	}
+}
+
+func TestContextAccessors(t *testing.T) {
+	c := DummyContext()
+
+	if c.Req() == nil {
+		t.Fatal("something wrong on c.Req()")
+	}
+
+	if c.Res() == nil {
+		t.Fatal("c.Res() returns nil")
+	}
+
+	if c.View() == nil {
+		t.Fatal("something wrong on c.View()")
 	}
 
 }
+
 
 

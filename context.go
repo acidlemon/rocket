@@ -8,7 +8,6 @@ import (
 type CtxData interface {
 	Res() *Response
 	Req() *http.Request
-	Writer() *http.ResponseWriter
 	View() Renderer
 
 	Render(string, RenderVars)
@@ -21,7 +20,6 @@ type CtxData interface {
 type Context struct {
 	req *http.Request
 	res *Response
-	writer *http.ResponseWriter
 	view Renderer
 	Stash map[string]interface{}
 }
@@ -45,10 +43,6 @@ func (c *Context) Res() *Response {
 
 func (c *Context) Req() *http.Request {
 	return c.req
-}
-
-func (c *Context) Writer() *http.ResponseWriter {
-	return c.writer
 }
 
 func (c *Context) View() Renderer {
