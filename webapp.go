@@ -77,7 +77,7 @@ func (app *WebApp) handler(w http.ResponseWriter, req *http.Request) {
 	bind.(*bindObject).HandleRequest(c)
 
 	// write response
-	c.Res().Write(&w)
+	c.Res().Write(w)
 }
 
 
