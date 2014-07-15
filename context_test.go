@@ -3,7 +3,6 @@ package rocket
 import (
 	"testing"
 	"net/http"
-	"github.com/acidlemon/rocket"
 )
 
 type MockView struct {
@@ -23,22 +22,22 @@ func (m *MockView) RenderTexts(texts []string) []string {
 	return result
 }
 
-func (m *MockView) RenderJSON(data rocket.RenderVars) string {
+func (m *MockView) RenderJSON(data RenderVars) string {
 	return "MockView.RenderJSON"
 }
 
-func (m *MockView) Render(tmpl string, data rocket.RenderVars) string {
+func (m *MockView) Render(tmpl string, data RenderVars) string {
 	return "MockView.Render(" + tmpl + ")"
 }
 
 
-func DummyContext() *rocket.Context {
+func DummyContext() *Context {
 	req := &http.Request{}
 	view := &MockView{}
 
-	c := rocket.NewContext(req, view)
+	c := NewContext(req, view)
 
-	return c.(*rocket.Context)
+	return c.(*Context)
 }
 
 func TestRenderer(t *testing.T) {
@@ -59,13 +58,13 @@ func TestRenderer(t *testing.T) {
 		t.Fatal("RenderTexts[1] is not powawapowawa")
 	}
 
-	c.RenderJSON(rocket.RenderVars{ "Cat": "nya" })
+	c.RenderJSON(RenderVars{ "Cat": "nya" })
 
 	if c.Res().Body[0] != "MockView.RenderJSON" {
 		t.Fatal("RenderJSON does not work properly")
 	}
 
-	c.Render("powawa", rocket.RenderVars{"Cat":"mya-"})
+	c.Render("powawa", RenderVars{"Cat":"mya-"})
 
 	if c.Res().Body[0] != "MockView.Render(powawa)" {
 		t.Fatal("Render does not work properly")

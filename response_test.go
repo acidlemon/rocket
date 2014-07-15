@@ -5,7 +5,6 @@ import (
 	"sort"
 	"net/http"
 	"testing"
-	"github.com/acidlemon/rocket"
 )
 
 type MockWriter struct {
@@ -39,7 +38,7 @@ func (w *MockWriter) Write(b []byte) (int, error){
 
 
 func TestResponse(t *testing.T) {
-	res := rocket.Response{
+	res := Response{
 		StatusCode: 200,
 		Body: []string{"test\n", "today is rainy\n"},
 		Header: http.Header{
