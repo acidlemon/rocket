@@ -3,25 +3,25 @@ package rocket
 import (
 	"net"
 	"net/http"
-	"github.com/naoina/kocha-urlrouter"
-	_ "github.com/naoina/kocha-urlrouter/tst"
-//	"github.com/acidlemon/go-dumper"
+
+	"github.com/naoina/denco"
+	//	"github.com/acidlemon/go-dumper"
 )
 
 type Handler func(CtxData)
 
-type CtxBuilder func(req *http.Request, view Renderer) CtxData
+type CtxBuilder func(req *http.Request, params denco.Params, view Renderer) CtxData
 
 type WebApp struct {
-	router urlrouter.URLRouter
-	routes map[string]*bindObject
-	server *http.Server
+	router     *denco.Router
+	routes     map[string]*bindObject
+	server     *http.Server
 	ctxBuilder CtxBuilder
 }
 
 type bindObject struct {
 	Method Handler
-	View Renderer
+	View   Renderer
 }
 
 func (b *bindObject) HandleRequest(c CtxData) {
@@ -38,9 +38,7 @@ func (app *WebApp) SetContextBuilder(f CtxBuilder) {
 }
 
 func (app *WebApp) Init() *WebApp {
-	router := urlrouter.NewURLRouter("tst")
-
-	app.router = router
+	app.router = denco.New()
 	app.routes = make(map[string]*bindObject)
 	app.ctxBuilder = NewContext
 
@@ -52,10 +50,10 @@ func (app *WebApp) AddRoute(path string, bind Handler, view Renderer) {
 }
 
 func (app *WebApp) BuildRouter() {
-	records := []urlrouter.Record{}
+	records := []denco.Record{}
 
 	for k, v := range app.routes {
-		records = append(records, urlrouter.NewRecord(k, v))
+		records = append(records, denco.NewRecord(k, v))
 	}
 
 	app.router.Build(records)
@@ -69,15 +67,13 @@ func (app *WebApp) Start(listener net.Listener) {
 }
 
 func (app *WebApp) handler(w http.ResponseWriter, req *http.Request) {
-	bind, _ := app.router.Lookup(req.URL.Path)
+	bind, params, _ := app.router.Lookup(req.URL.Path)
 
 	var c CtxData
-	c = app.ctxBuilder(req, bind.(*bindObject).View)
+	c = app.ctxBuilder(req, params, bind.(*bindObject).View)
 
 	bind.(*bindObject).HandleRequest(c)
 
 	// write response
 	c.Res().Write(w)
 }
-
-
