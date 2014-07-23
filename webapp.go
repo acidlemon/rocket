@@ -63,12 +63,12 @@ func (app *WebApp) BuildRouter() {
 
 func (app *WebApp) Start(listener net.Listener) {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", app.handler)
+	mux.HandleFunc("/", app.Handler)
 	app.server = &http.Server{Handler: mux}
 	app.server.Serve(listener)
 }
 
-func (app *WebApp) handler(w http.ResponseWriter, req *http.Request) {
+func (app *WebApp) Handler(w http.ResponseWriter, req *http.Request) {
 	bind, _ := app.router.Lookup(req.URL.Path)
 
 	var c CtxData
@@ -78,6 +78,10 @@ func (app *WebApp) handler(w http.ResponseWriter, req *http.Request) {
 
 	// write response
 	c.Res().Write(w)
+}
+
+func (app *WebApp) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	app.Handler(w, req)
 }
 
 
