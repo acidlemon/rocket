@@ -1,8 +1,10 @@
 package rocket
 
 import (
-	"testing"
 	"net/http"
+	"testing"
+
+	"github.com/naoina/denco"
 )
 
 type MockView struct {
@@ -16,7 +18,7 @@ func (m *MockView) RenderTexts(texts []string) []string {
 	result := []string{}
 
 	for _, v := range texts {
-		result = append(result, v + v)
+		result = append(result, v+v)
 	}
 
 	return result
@@ -30,12 +32,12 @@ func (m *MockView) Render(tmpl string, data RenderVars) string {
 	return "MockView.Render(" + tmpl + ")"
 }
 
-
 func DummyContext() *Context {
 	req := &http.Request{}
 	view := &MockView{}
+	params := denco.Params{}
 
-	c := NewContext(req, view)
+	c := NewContext(req, params, view)
 
 	return c.(*Context)
 }
@@ -58,13 +60,13 @@ func TestRenderer(t *testing.T) {
 		t.Fatal("RenderTexts[1] is not powawapowawa")
 	}
 
-	c.RenderJSON(RenderVars{ "Cat": "nya" })
+	c.RenderJSON(RenderVars{"Cat": "nya"})
 
 	if c.Res().Body[0] != "MockView.RenderJSON" {
 		t.Fatal("RenderJSON does not work properly")
 	}
 
-	c.Render("powawa", RenderVars{"Cat":"mya-"})
+	c.Render("powawa", RenderVars{"Cat": "mya-"})
 
 	if c.Res().Body[0] != "MockView.Render(powawa)" {
 		t.Fatal("Render does not work properly")
@@ -86,7 +88,7 @@ func TestContextAccessors(t *testing.T) {
 		t.Fatal("something wrong on c.View()")
 	}
 
+	if c.Params() == nil {
+		t.Fatal("something wrong on c.Params()")
+	}
 }
-
-
-

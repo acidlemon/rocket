@@ -2,13 +2,15 @@ package rocket
 
 import (
 	"net/http"
-)
 
+	"github.com/naoina/denco"
+)
 
 type CtxData interface {
 	Res() *Response
 	Req() *http.Request
 	View() Renderer
+	Params() denco.Params
 
 	Render(string, RenderVars)
 	RenderText(string)
@@ -16,22 +18,23 @@ type CtxData interface {
 	RenderJSON(RenderVars)
 }
 
-
 type Context struct {
-	req *http.Request
-	res *Response
-	view Renderer
-	Stash map[string]interface{}
+	req    *http.Request
+	res    *Response
+	view   Renderer
+	params denco.Params
+	Stash  map[string]interface{}
 }
 
-func NewContext(request *http.Request, renderer Renderer) CtxData {
+func NewContext(request *http.Request, params denco.Params, renderer Renderer) CtxData {
 	c := &Context{
 		req: request,
 		res: &Response{
 			StatusCode: 404,
 		},
-		view: renderer,
-		Stash: map[string]interface{}{},
+		params: params,
+		view:   renderer,
+		Stash:  map[string]interface{}{},
 	}
 
 	return c
@@ -47,6 +50,10 @@ func (c *Context) Req() *http.Request {
 
 func (c *Context) View() Renderer {
 	return c.view
+}
+
+func (c *Context) Params() denco.Params {
+	return c.params
 }
 
 func (c *Context) RenderText(text string) {
@@ -68,5 +75,3 @@ func (c *Context) Render(tmpl string, data RenderVars) {
 	renderText := c.View().Render(tmpl, data)
 	c.Res().Body = []string{renderText}
 }
-
-
