@@ -9,7 +9,7 @@ type CtxData interface {
 	Req() *http.Request
 	View() Renderer
 	Args() Args
-//	Params() Params
+	Params() Params
 
 	Render(string, RenderVars)
 	RenderText(string)
@@ -22,14 +22,17 @@ type Context struct {
 	res    *Response
 	view   Renderer
 	args   Args
-//	params Params
+	params Params
 	Stash  map[string]interface{}
 }
 
 type Args map[string]string
-//type Params map[string]interface{}
+type Params map[string][]string
 
 func NewContext(request *http.Request, args Args, renderer Renderer) CtxData {
+	request.ParseForm()
+	params := map[string][]string(request.Form)
+
 	c := &Context{
 		req: request,
 		res: &Response{
@@ -37,6 +40,7 @@ func NewContext(request *http.Request, args Args, renderer Renderer) CtxData {
 		},
 		args: args,
 		view: renderer,
+		params: params,
 		Stash: map[string]interface{}{},
 	}
 
@@ -57,6 +61,10 @@ func (c *Context) View() Renderer {
 
 func (c *Context) Args() Args {
 	return c.args
+}
+
+func (c *Context) Params() Params {
+	return c.params
 }
 
 func (c *Context) RenderText(text string) {
