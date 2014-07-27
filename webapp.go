@@ -10,7 +10,7 @@ import (
 
 type Handler func(CtxData)
 
-type CtxBuilder func(req *http.Request, params denco.Params, view Renderer) CtxData
+type CtxBuilder func(req *http.Request, args Args, view Renderer) CtxData
 
 type WebApp struct {
 	router     *denco.Router
@@ -67,10 +67,15 @@ func (app *WebApp) Start(listener net.Listener) {
 }
 
 func (app *WebApp) Handler(w http.ResponseWriter, req *http.Request) {
-	bind, params, _ := app.router.Lookup(req.URL.Path)
+	bind, pathParams, _ := app.router.Lookup(req.URL.Path)
+
+	var args Args
+	for _, v := range pathParams {
+		args[v.Name] = v.Value
+	}
 
 	var c CtxData
-	c = app.ctxBuilder(req, params, bind.(*bindObject).View)
+	c = app.ctxBuilder(req, args, bind.(*bindObject).View)
 
 	bind.(*bindObject).HandleRequest(c)
 
