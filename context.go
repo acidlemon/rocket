@@ -9,7 +9,10 @@ type CtxData interface {
 	Req() *http.Request
 	View() Renderer
 	Args() Args
+	Arg(string) (string, bool)
 	Params() Params
+	Param(string) ([]string, bool)
+	ParamSingle(string) (string, bool)
 
 	Render(string, RenderVars)
 	RenderText(string)
