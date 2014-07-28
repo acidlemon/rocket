@@ -63,9 +63,34 @@ func (c *Context) Args() Args {
 	return c.args
 }
 
+func (c *Context) Arg(name string) (string, bool) {
+	value, ok := c.args[name]
+
+	return value, ok
+}
+
 func (c *Context) Params() Params {
 	return c.params
 }
+
+func (c *Context) Param(name string) ([]string, bool) {
+	slice, ok := c.params[name]
+	return slice, ok
+}
+
+func (c *Context) ParamSingle(name string) (string, bool) {
+	var value string
+	valid := false
+	if slice, ok := c.params[name]; ok {
+		if len(slice) > 0 {
+			value = slice[0]
+			valid = true
+		}
+	}
+
+	return value, valid
+}
+
 
 func (c *Context) RenderText(text string) {
 	renderText := c.View().RenderText(text)
