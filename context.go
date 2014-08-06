@@ -39,7 +39,7 @@ func NewContext(request *http.Request, args Args, renderer Renderer) CtxData {
 	c := &Context{
 		req: request,
 		res: &Response{
-			StatusCode: 404,
+			StatusCode: 200,
 		},
 		args: args,
 		view: renderer,
