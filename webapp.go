@@ -69,6 +69,11 @@ func (app *WebApp) Start(listener net.Listener) {
 func (app *WebApp) Handler(w http.ResponseWriter, req *http.Request) {
 	bind, pathParams, _ := app.router.Lookup(req.URL.Path)
 
+	if bind == nil {
+		http.NotFound(w, req);
+		return
+	}
+
 	var args = Args{}
 	for _, v := range pathParams {
 		args[v.Name] = v.Value
