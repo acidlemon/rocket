@@ -3,8 +3,6 @@ package rocket
 import (
 	"net/http"
 	"testing"
-
-	"github.com/naoina/denco"
 )
 
 type MockView struct {
@@ -35,9 +33,9 @@ func (m *MockView) Render(tmpl string, data RenderVars) string {
 func DummyContext() *Context {
 	req := &http.Request{}
 	view := &MockView{}
-	params := denco.Params{}
+	args := Args{}
 
-	c := NewContext(req, params, view)
+	c := NewContext(req, args, view)
 
 	return c.(*Context)
 }

@@ -32,7 +32,7 @@ func TestBasic(t *testing.T) {
 		t.Fatal(err)
 	}
 	rec := httptest.NewRecorder()
-	app.handler(rec, req)
+	app.Handler(rec, req)
 	if rec.Code != 200 {
 		t.Errorf("expected %v, but got %v", 200, rec.Code)
 	}
@@ -45,7 +45,7 @@ func TestQueryParams(t *testing.T) {
 	app := newTestApp()
 	app.AddRoute("/:name", func(c CtxData) {
 		c.Res().StatusCode = http.StatusOK
-		c.RenderText(fmt.Sprintf("Hello %s!!", c.Params().Get("name")))
+		c.RenderText(fmt.Sprintf("Hello %s!!", c.Args()["name"]))
 	}, view)
 	app.BuildRouter()
 	req, err := http.NewRequest("GET", "/powawa", nil)
@@ -53,7 +53,7 @@ func TestQueryParams(t *testing.T) {
 		t.Fatal(err)
 	}
 	rec := httptest.NewRecorder()
-	app.handler(rec, req)
+	app.Handler(rec, req)
 	if rec.Code != 200 {
 		t.Errorf("expected %v, but got %v", 200, rec.Code)
 	}
