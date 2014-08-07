@@ -14,6 +14,8 @@ type CtxData interface {
 	Param(string) ([]string, bool)
 	ParamSingle(string) (string, bool)
 
+	Redirect(string)
+
 	Render(string, RenderVars)
 	RenderText(string)
 	RenderTexts([]string)
@@ -40,6 +42,7 @@ func NewContext(request *http.Request, args Args, renderer Renderer) CtxData {
 		req: request,
 		res: &Response{
 			StatusCode: 200,
+			Header: http.Header{},
 		},
 		args: args,
 		view: renderer,
@@ -94,6 +97,11 @@ func (c *Context) ParamSingle(name string) (string, bool) {
 	return value, valid
 }
 
+func (c *Context) Redirect(uri string) {
+	c.Res().StatusCode = http.StatusFound
+	c.Res().Header.Set("Location", uri)
+	c.Res().Body = []string{""}
+}
 
 func (c *Context) RenderText(text string) {
 	renderText := c.View().RenderText(text)
@@ -114,3 +122,4 @@ func (c *Context) Render(tmpl string, data RenderVars) {
 	renderText := c.View().Render(tmpl, data)
 	c.Res().Body = []string{renderText}
 }
+
