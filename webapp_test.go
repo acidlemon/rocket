@@ -41,7 +41,7 @@ func TestBasic(t *testing.T) {
 	}
 }
 
-func TestQueryParams(t *testing.T) {
+func TestQueryArgs(t *testing.T) {
 	app := newTestApp()
 	app.AddRoute("/:name", func(c CtxData) {
 		c.Res().StatusCode = http.StatusOK
