@@ -11,13 +11,12 @@ type XslateView struct {
 	xt *xslate.Xslate // TODO ViewごとにXslateオブジェクト作っていいのかな
 }
 
-// TODO Kolonまだ制御文法ないからTTerseをデフォにしたほうがいい…?
 func NewXslateView() *XslateView {
 	view := new(XslateView)
 
 	var err error
 	view.xt, err = xslate.New(xslate.Args{
-		"Parser": xslate.Args{"Syntax": "Kolon"},
+		"Parser": xslate.Args{"Syntax": "TTerse"},
 	})
 	if err != nil {
 		panic(fmt.Sprintf("Xslate initiate error: err=%v", err))
