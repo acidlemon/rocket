@@ -45,6 +45,14 @@ func (app *WebApp) Init() *WebApp {
 	return app
 }
 
+func (app *WebApp) RegisterController(c Dispatcher){
+	r := c.FetchRoutes()
+
+	for k, v := range r {
+		app.routes[k] = v
+	}
+}
+
 func (app *WebApp) AddRoute(path string, bind Handler, view Renderer) {
 	app.routes[path] = &bindObject{bind, view}
 }
