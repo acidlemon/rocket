@@ -71,6 +71,8 @@ func (app *WebApp) Start(listener net.Listener) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", app.Handler)
 	app.server = &http.Server{Handler: mux}
+
+	fmt.Println("listen start:", listener.Addr().String())
 	app.server.Serve(listener)
 }
 
