@@ -27,7 +27,7 @@ type bindObject struct {
 }
 
 var (
-    errorPage = `
+    errorPage = `<!DOCTYPE html>
 <html>
 <head>
 <title>Internal Server Error</title>
@@ -59,8 +59,11 @@ func (b *bindObject) HandleRequest(c CtxData) {
 		if e := recover(); e != nil {
 			buf := make([]byte, 4096)
 			runtime.Stack(buf, false)
+			stackMsg := string(buf)
 			c.Res().StatusCode = http.StatusInternalServerError
-			c.Res().Body = []string{ fmt.Sprintf(errorPage, e, string(buf))}
+			c.Res().Body = []string{ fmt.Sprintf(errorPage, e, stackMsg)}
+			fmt.Println("Error:", e)
+			fmt.Println("Stack:\n", stackMsg)
 		}
 	}()
 	b.Method(c)
