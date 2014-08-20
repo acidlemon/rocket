@@ -1,8 +1,10 @@
 package rocket
 
 import (
+	"fmt"
 	"net"
 	"net/http"
+	"runtime"
 
 	"github.com/naoina/denco"
 	//	"github.com/acidlemon/go-dumper"
@@ -24,7 +26,43 @@ type bindObject struct {
 	View   Renderer
 }
 
+var (
+    errorPage = `
+<html>
+<head>
+<title>Internal Server Error</title>
+<link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+<style type="text/css">
+body {
+    margin:0 20px;
+}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="page-header">
+<h1>Internal Server Error</h1>
+</div>
+<div class="panel panel-danger">
+<div class="panel-heading">reason: %v</div>
+<div class="panel-body">
+<pre>%v</pre>
+</div>
+</div>
+</body>
+</html>
+`
+)
+
 func (b *bindObject) HandleRequest(c CtxData) {
+	defer func() {
+		if e := recover(); e != nil {
+			buf := make([]byte, 4096)
+			runtime.Stack(buf, false)
+			c.Res().StatusCode = http.StatusInternalServerError
+			c.Res().Body = []string{ fmt.Sprintf(errorPage, e, string(buf))}
+		}
+	}()
 	b.Method(c)
 }
 
