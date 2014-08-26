@@ -18,6 +18,7 @@ type Renderer interface {
 }
 
 type View struct {
+	BasicTemplates []string
 }
 
 func (v *View) RenderText(text string) string {
@@ -30,8 +31,15 @@ func (v *View) RenderTexts(texts []string) []string {
 
 func (v *View) Render(tmplFile string, bind RenderVars) string {
 	buf := new(bytes.Buffer)
+	var err error
 	tmpl := template.Must(template.ParseFiles(tmplFile)) // TODO Cache?
-	err := tmpl.Execute(buf, bind)
+	for _, v := range v.BasicTemplates {
+		tmpl, err = tmpl.ParseFiles(v)
+		if err != nil {
+			panic(err)
+		}
+	}
+	err = tmpl.Execute(buf, bind)
 	if err != nil {
 		panic(fmt.Sprintf("render error: err=%v", err))
 	}
