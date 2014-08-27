@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"html/template"
 	"bytes"
+	"path/filepath"
 //	"github.com/acidlemon/go-dumper"
 )
 
@@ -19,6 +20,7 @@ type Renderer interface {
 
 type View struct {
 	BasicTemplates []string
+	TemplateDelims []string // Delims[0] = left, Delims[1] = right
 }
 
 func (v *View) RenderText(text string) string {
@@ -29,14 +31,35 @@ func (v *View) RenderTexts(texts []string) []string {
 	return texts
 }
 
+func (v *View) delims() (string, string) {
+	left := ""
+	right := ""
+
+	if v.TemplateDelims != nil {
+		if len(v.TemplateDelims) > 0 {
+			left = v.TemplateDelims[0]
+		}
+		if len(v.TemplateDelims) > 1 {
+			right = v.TemplateDelims[1]
+		}
+	}
+
+	return left, right
+}
+
 func (v *View) Render(tmplFile string, bind RenderVars) string {
 	buf := new(bytes.Buffer)
 	var err error
-	tmpl := template.Must(template.ParseFiles(tmplFile)) // TODO Cache?
-	for _, v := range v.BasicTemplates {
-		tmpl, err = tmpl.ParseFiles(v)
-		if err != nil {
-			panic(err)
+	
+	tmpl := template.Must(
+		template.New(filepath.Base(tmplFile)).Delims(v.delims()).ParseFiles(tmplFile))
+
+	if v.BasicTemplates != nil {
+		for _, v := range v.BasicTemplates {
+			tmpl, err = tmpl.ParseFiles(v)
+			if err != nil {
+				panic(err)
+			}
 		}
 	}
 	err = tmpl.Execute(buf, bind)
