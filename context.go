@@ -116,6 +116,7 @@ func (c *Context) RenderTexts(texts []string) {
 func (c *Context) RenderJSON(data RenderVars) {
 	renderJson := c.View().RenderJSON(data)
 	c.Res().Body = []string{renderJson}
+	c.Res().Header.Add("Content-Type", "application/json")
 }
 
 func (c *Context) Render(tmpl string, data RenderVars) {
