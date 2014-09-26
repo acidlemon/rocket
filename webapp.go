@@ -15,10 +15,12 @@ type Handler func(CtxData)
 type CtxBuilder func(req *http.Request, args Args, view Renderer) CtxData
 
 type WebApp struct {
-	router     *denco.Router
-	routes     map[string]*bindObject
-	server     *http.Server
-	ctxBuilder CtxBuilder
+	router      *denco.Router
+	routes      map[string]*bindObject
+	server      *http.Server
+	ctxBuilder  CtxBuilder
+	middlewares []MiddlewareHandler
+	middleware  middleware
 }
 
 type bindObject struct {
@@ -82,6 +84,7 @@ func (app *WebApp) Init() *WebApp {
 	app.router = denco.New()
 	app.routes = make(map[string]*bindObject)
 	app.ctxBuilder = NewContext
+	app.middlewares = []MiddlewareHandler{}
 
 	return app
 }
@@ -109,8 +112,10 @@ func (app *WebApp) BuildRouter() {
 }
 
 func (app *WebApp) Start(listener net.Listener) {
+	app.Use(WrapMiddlewareHandler(http.HandlerFunc(app.Handler)))
+
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", app.Handler)
+	mux.Handle("/", app)
 	app.server = &http.Server{Handler: mux}
 
 	fmt.Println("listen start:", listener.Addr().String())
@@ -140,6 +145,10 @@ func (app *WebApp) Handler(w http.ResponseWriter, req *http.Request) {
 }
 
 func (app *WebApp) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	app.Handler(w, req)
+	app.middleware.ServeHTTP(w, req)
 }
 
+func (app *WebApp) Use(mh MiddlewareHandler) {
+	app.middlewares = append(app.middlewares, mh)
+	app.middleware = build(app.middlewares)
+}
