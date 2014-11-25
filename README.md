@@ -2,13 +2,20 @@
 
 Rocket - thin web application framework for Golang
 
-## Notice
+## Usage
 
-Do NOT use for production yet! API/Interface/Structure will change without compatibility.
+```
+import "github.com/acidlemon/rocket/v1"
+
+```
+
+see [github.com/acidlemon/rocket-sample](https://github.com/acidlemon/rocket-sample)
+
+Note: If it is need to incompatible changes on rocket, I create new version directory.
+
 
 ## TODO
 
-- querystring / http body parameter support
 - session support
 - middleware support
 
