@@ -1,12 +1,12 @@
-package rocket
+package rocket // import "gopkg.in/acidlemon/rocket.v1"
 
 import (
-	"fmt"
-	"encoding/json"
-	"html/template"
 	"bytes"
+	"encoding/json"
+	"fmt"
+	"html/template"
 	"path/filepath"
-//	"github.com/acidlemon/go-dumper"
+	//	"github.com/acidlemon/go-dumper"
 )
 
 type RenderVars map[string]interface{}
@@ -50,7 +50,7 @@ func (v *View) delims() (string, string) {
 func (v *View) Render(tmplFile string, bind RenderVars) string {
 	buf := new(bytes.Buffer)
 	var err error
-	
+
 	tmpl := template.Must(
 		template.New(filepath.Base(tmplFile)).Delims(v.delims()).ParseFiles(tmplFile))
 
@@ -79,5 +79,3 @@ func (v *View) RenderJSON(data RenderVars) string {
 
 	return string(text)
 }
-
-

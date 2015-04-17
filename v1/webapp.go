@@ -1,13 +1,13 @@
-package rocket
+package rocket // import "gopkg.in/acidlemon/rocket.v1"
 
 import (
 	"fmt"
+	"log"
 	"net"
 	"net/http"
 	"runtime"
 
 	"github.com/naoina/denco"
-	//	"github.com/acidlemon/go-dumper"
 )
 
 type Handler func(CtxData)
@@ -27,7 +27,7 @@ type bindObject struct {
 }
 
 var (
-    errorPage = `<!DOCTYPE html>
+	errorPage = `<!DOCTYPE html>
 <html>
 <head>
 <title>Internal Server Error</title>
@@ -61,7 +61,7 @@ func (b *bindObject) HandleRequest(c CtxData) {
 			runtime.Stack(buf, false)
 			stackMsg := string(buf)
 			c.Res().StatusCode = http.StatusInternalServerError
-			c.Res().Body = []string{ fmt.Sprintf(errorPage, e, stackMsg)}
+			c.Res().Body = []string{fmt.Sprintf(errorPage, e, stackMsg)}
 			fmt.Println("Error:", e)
 			fmt.Println("Stack:\n", stackMsg)
 		}
@@ -86,7 +86,7 @@ func (app *WebApp) Init() *WebApp {
 	return app
 }
 
-func (app *WebApp) RegisterController(c Dispatcher){
+func (app *WebApp) RegisterController(c Dispatcher) {
 	r := c.FetchRoutes()
 
 	for k, v := range r {
@@ -113,7 +113,7 @@ func (app *WebApp) Start(listener net.Listener) {
 	mux.HandleFunc("/", app.Handler)
 	app.server = &http.Server{Handler: mux}
 
-	fmt.Println("listen start:", listener.Addr().String())
+	log.Println("listen start:", listener.Addr().String())
 	app.server.Serve(listener)
 }
 
@@ -121,7 +121,7 @@ func (app *WebApp) Handler(w http.ResponseWriter, req *http.Request) {
 	bind, pathParams, _ := app.router.Lookup(req.URL.Path)
 
 	if bind == nil {
-		http.NotFound(w, req);
+		http.NotFound(w, req)
 		return
 	}
 
@@ -137,9 +137,9 @@ func (app *WebApp) Handler(w http.ResponseWriter, req *http.Request) {
 
 	// write response
 	c.Res().Write(w)
+
 }
 
 func (app *WebApp) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	app.Handler(w, req)
 }
-

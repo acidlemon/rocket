@@ -1,10 +1,10 @@
-package rocket
+package rocket // import "gopkg.in/acidlemon/rocket.v1"
 
 import (
 	"fmt"
+
 	"github.com/lestrrat/go-xslate"
 )
-
 
 type XslateView struct {
 	View
@@ -33,6 +33,3 @@ func (v *XslateView) Render(tmplFile string, bind RenderVars) string {
 
 	return result
 }
-
-
-

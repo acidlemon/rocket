@@ -1,4 +1,4 @@
-package rocket
+package rocket // import "gopkg.in/acidlemon/rocket.v1"
 
 import (
 	"net/http"
@@ -6,8 +6,8 @@ import (
 
 type Response struct {
 	StatusCode int
-	Body []string
-	Header http.Header
+	Body       []string
+	Header     http.Header
 }
 
 func (res *Response) Write(w http.ResponseWriter) {
@@ -23,7 +23,3 @@ func (res *Response) Write(w http.ResponseWriter) {
 		w.Write([]byte(str))
 	}
 }
-
-
-
-

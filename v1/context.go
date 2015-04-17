@@ -1,4 +1,4 @@
-package rocket
+package rocket // import "gopkg.in/acidlemon/rocket.v1"
 
 import (
 	"net/http"
@@ -42,12 +42,12 @@ func NewContext(request *http.Request, args Args, renderer Renderer) CtxData {
 		req: request,
 		res: &Response{
 			StatusCode: 200,
-			Header: http.Header{},
+			Header:     http.Header{},
 		},
-		args: args,
-		view: renderer,
+		args:   args,
+		view:   renderer,
 		params: params,
-		Stash: map[string]interface{}{},
+		Stash:  map[string]interface{}{},
 	}
 
 	return c
@@ -123,4 +123,3 @@ func (c *Context) Render(tmpl string, data RenderVars) {
 	renderText := c.View().Render(tmpl, data)
 	c.Res().Body = []string{renderText}
 }
-

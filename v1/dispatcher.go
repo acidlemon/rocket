@@ -1,4 +1,4 @@
-package rocket
+package rocket // import "gopkg.in/acidlemon/rocket.v1"
 
 import (
 	"path"
@@ -11,13 +11,13 @@ type Dispatcher interface {
 
 type Controller struct {
 	routes map[string]*bindObject
-	Mount string
+	Mount  string
 }
 
 func NewController() *Controller {
 	return &Controller{
 		routes: make(map[string]*bindObject),
-		Mount: "",
+		Mount:  "",
 	}
 }
 
@@ -36,5 +36,3 @@ func (c *Controller) FetchRoutes() map[string]*bindObject {
 		return c.routes
 	}
 }
-
-
