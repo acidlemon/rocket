@@ -5,7 +5,7 @@ Rocket - thin web application framework for Golang
 ## Usage
 
 ```
-import "github.com/acidlemon/rocket/v1"
+import "gopkg.in/acidlemon/rocket.v2"
 
 ```
 

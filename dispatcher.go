@@ -1,4 +1,4 @@
-package rocket // import "gopkg.in/acidlemon/rocket.v1"
+package rocket // import "gopkg.in/acidlemon/rocket.v2"
 
 import (
 	"path"
