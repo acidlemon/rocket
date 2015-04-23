@@ -10,6 +10,7 @@ type CtxData interface {
 	View() Renderer
 	Args() Args
 	Arg(string) (string, bool)
+	MustArg(string) string
 	Params() Params
 	Param(string) ([]string, bool)
 	ParamSingle(string) (string, bool)
@@ -73,6 +74,14 @@ func (c *Context) Arg(name string) (string, bool) {
 	value, ok := c.args[name]
 
 	return value, ok
+}
+
+func (c *Context) MustArg(name string) string {
+	if value, ok := c.args[name]; !ok {
+		panic("Context.MustArg could not found key: " + name)
+	} else {
+		return value
+	}
 }
 
 func (c *Context) Params() Params {
