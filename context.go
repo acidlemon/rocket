@@ -14,6 +14,7 @@ type CtxData interface {
 	Params() Params
 	Param(string) ([]string, bool)
 	ParamSingle(string) (string, bool)
+	SetCookie(*http.Cookie)
 
 	Redirect(string)
 
@@ -104,6 +105,10 @@ func (c *Context) ParamSingle(name string) (string, bool) {
 	}
 
 	return value, valid
+}
+
+func (c *Context) SetCookie(cookie *http.Cookie) {
+	c.Res().Header.Add("Set-Cookie", cookie.String())
 }
 
 func (c *Context) Redirect(uri string) {
