@@ -1,10 +1,14 @@
-package rocket // import "gopkg.in/acidlemon/rocket.v2"
+package rocket
 
 import (
+	"context"
 	"net/http"
+	"strconv"
 )
 
-type CtxData interface {
+const CONTEXT_KEY string = "rocket.Context"
+
+type Context interface {
 	Res() *Response
 	Req() *http.Request
 	View() Renderer
@@ -13,7 +17,9 @@ type CtxData interface {
 	MustArg(string) string
 	Params() Params
 	Param(string) ([]string, bool)
+	ParamInt(string) ([]int64, bool)
 	ParamSingle(string) (string, bool)
+	ParamSingleInt(string) (int64, bool)
 	SetCookie(*http.Cookie)
 
 	Redirect(string)
@@ -21,10 +27,11 @@ type CtxData interface {
 	Render(string, RenderVars)
 	RenderText(string)
 	RenderTexts([]string)
-	RenderJSON(RenderVars)
+	RenderJSON(interface{})
+	Halt(int, string)
 }
 
-type Context struct {
+type c struct {
 	req    *http.Request
 	res    *Response
 	view   Renderer
@@ -36,11 +43,11 @@ type Context struct {
 type Args map[string]string
 type Params map[string][]string
 
-func NewContext(request *http.Request, args Args, renderer Renderer) CtxData {
+func NewContext(ctx context.Context, request *http.Request, args Args, renderer Renderer) context.Context {
 	request.ParseForm()
 	params := map[string][]string(request.Form)
 
-	c := &Context{
+	myC := &c{
 		req: request,
 		res: &Response{
 			StatusCode: 200,
@@ -52,32 +59,34 @@ func NewContext(request *http.Request, args Args, renderer Renderer) CtxData {
 		Stash:  map[string]interface{}{},
 	}
 
-	return c
+	ctx = context.WithValue(ctx, CONTEXT_KEY, myC)
+
+	return ctx
 }
 
-func (c *Context) Res() *Response {
+func (c *c) Res() *Response {
 	return c.res
 }
 
-func (c *Context) Req() *http.Request {
+func (c *c) Req() *http.Request {
 	return c.req
 }
 
-func (c *Context) View() Renderer {
+func (c *c) View() Renderer {
 	return c.view
 }
 
-func (c *Context) Args() Args {
+func (c *c) Args() Args {
 	return c.args
 }
 
-func (c *Context) Arg(name string) (string, bool) {
+func (c *c) Arg(name string) (string, bool) {
 	value, ok := c.args[name]
 
 	return value, ok
 }
 
-func (c *Context) MustArg(name string) string {
+func (c *c) MustArg(name string) string {
 	if value, ok := c.args[name]; !ok {
 		panic("Context.MustArg could not found key: " + name)
 	} else {
@@ -85,16 +94,34 @@ func (c *Context) MustArg(name string) string {
 	}
 }
 
-func (c *Context) Params() Params {
+func (c *c) Params() Params {
 	return c.params
 }
 
-func (c *Context) Param(name string) ([]string, bool) {
+func (c *c) Param(name string) ([]string, bool) {
 	slice, ok := c.params[name]
 	return slice, ok
 }
 
-func (c *Context) ParamSingle(name string) (string, bool) {
+func (c *c) ParamInt(name string) ([]int64, bool) {
+	slice, ok := c.params[name]
+	if !ok {
+		return nil, false
+	}
+
+	result := make([]int64, 0, len(slice))
+	for _, str := range slice {
+		value, err := strconv.ParseInt(str, 10, 64)
+		if err != nil {
+			return nil, false
+		}
+		result = append(result, value)
+	}
+
+	return result, true
+}
+
+func (c *c) ParamSingle(name string) (string, bool) {
 	var value string
 	valid := false
 	if slice, ok := c.params[name]; ok {
@@ -107,33 +134,53 @@ func (c *Context) ParamSingle(name string) (string, bool) {
 	return value, valid
 }
 
-func (c *Context) SetCookie(cookie *http.Cookie) {
-	c.Res().Header.Add("Set-Cookie", cookie.String())
+func (c *c) ParamSingleInt(name string) (int64, bool) {
+	str, valid := c.ParamSingle(name)
+	if !valid {
+		return 0, false
+	}
+
+	value, err := strconv.ParseInt(str, 10, 64)
+	if err != nil {
+		return 0, false
+	}
+
+	return value, true
 }
 
-func (c *Context) Redirect(uri string) {
-	c.Res().StatusCode = http.StatusFound
-	c.Res().Header.Set("Location", uri)
-	c.Res().Body = []string{""}
+func (c *c) SetCookie(cookie *http.Cookie) {
+	c.res.Header.Add("Set-Cookie", cookie.String())
 }
 
-func (c *Context) RenderText(text string) {
+func (c *c) Redirect(uri string) {
+	c.res.StatusCode = http.StatusFound
+	c.res.Header.Set("Location", uri)
+	c.res.Body = []string{""}
+}
+
+func (c *c) RenderText(text string) {
 	renderText := c.View().RenderText(text)
-	c.Res().Body = []string{renderText}
+	c.res.Body = []string{renderText}
 }
 
-func (c *Context) RenderTexts(texts []string) {
+func (c *c) RenderTexts(texts []string) {
 	renderTexts := c.View().RenderTexts(texts)
-	c.Res().Body = renderTexts
+	c.res.Body = renderTexts
 }
 
-func (c *Context) RenderJSON(data RenderVars) {
+func (c *c) RenderJSON(data interface{}) {
 	renderJson := c.View().RenderJSON(data)
-	c.Res().Body = []string{renderJson}
-	c.Res().Header.Add("Content-Type", "application/json")
+	c.res.Body = []string{renderJson}
+	c.res.Header.Add("Content-Type", "application/json")
 }
 
-func (c *Context) Render(tmpl string, data RenderVars) {
+func (c *c) Render(tmpl string, data RenderVars) {
 	renderText := c.View().Render(tmpl, data)
-	c.Res().Body = []string{renderText}
+	c.res.Body = []string{renderText}
+}
+
+// Halt does not render using view
+func (c *c) Halt(code int, text string) {
+	c.res.StatusCode = code
+	c.res.Body = []string{text}
 }

@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 
+	"context"
 	"testing"
 )
 
@@ -22,7 +23,7 @@ func newTestApp() TestApp {
 
 func TestBasic(t *testing.T) {
 	app := newTestApp()
-	app.AddRoute("/", func(c CtxData) {
+	app.AddRoute("/", func(ctx context.Context, c Context) {
 		c.Res().StatusCode = http.StatusOK
 		c.RenderText("Hello World!!")
 	}, view)
@@ -43,7 +44,7 @@ func TestBasic(t *testing.T) {
 
 func TestQueryArgs(t *testing.T) {
 	app := newTestApp()
-	app.AddRoute("/:name", func(c CtxData) {
+	app.AddRoute("/:name", func(ctx context.Context, c Context) {
 		c.Res().StatusCode = http.StatusOK
 		c.RenderText(fmt.Sprintf("Hello %s!!", c.Args()["name"]))
 	}, view)

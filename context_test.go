@@ -1,6 +1,7 @@
 package rocket
 
 import (
+	"context"
 	"net/http"
 	"testing"
 )
@@ -22,7 +23,7 @@ func (m *MockView) RenderTexts(texts []string) []string {
 	return result
 }
 
-func (m *MockView) RenderJSON(data RenderVars) string {
+func (m *MockView) RenderJSON(data interface{}) string {
 	return "MockView.RenderJSON"
 }
 
@@ -30,14 +31,16 @@ func (m *MockView) Render(tmpl string, data RenderVars) string {
 	return "MockView.Render(" + tmpl + ")"
 }
 
-func DummyContext() *Context {
+func DummyContext() *c {
 	req := &http.Request{}
 	view := &MockView{}
 	args := Args{}
 
-	c := NewContext(req, args, view)
+	ctx := context.Background()
+	ctx = NewContext(ctx, req, args, view)
+	c := ctx.Value(CONTEXT_KEY).(*c)
 
-	return c.(*Context)
+	return c
 }
 
 func TestRenderer(t *testing.T) {

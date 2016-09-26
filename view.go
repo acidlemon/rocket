@@ -1,4 +1,4 @@
-package rocket // import "gopkg.in/acidlemon/rocket.v2"
+package rocket
 
 import (
 	"bytes"
@@ -15,7 +15,7 @@ type Renderer interface {
 	Render(string, RenderVars) string
 	RenderText(string) string
 	RenderTexts([]string) []string
-	RenderJSON(RenderVars) string
+	RenderJSON(interface{}) string
 }
 
 type View struct {
@@ -70,7 +70,7 @@ func (v *View) Render(tmplFile string, bind RenderVars) string {
 	return buf.String()
 }
 
-func (v *View) RenderJSON(data RenderVars) string {
+func (v *View) RenderJSON(data interface{}) string {
 	text, err := json.Marshal(data)
 
 	if err != nil {

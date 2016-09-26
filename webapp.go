@@ -1,4 +1,4 @@
-package rocket // import "gopkg.in/acidlemon/rocket.v2"
+package rocket
 
 import (
 	"fmt"
@@ -7,18 +7,20 @@ import (
 	"net/http"
 	"runtime"
 
+	"context"
+
 	"github.com/naoina/denco"
 )
 
-type Handler func(CtxData)
+type Handler func(context.Context, Context)
 
-type CtxBuilder func(req *http.Request, args Args, view Renderer) CtxData
+type ContextBuilder func(ctx context.Context, req *http.Request, args Args, view Renderer) context.Context
 
 type WebApp struct {
 	router     *denco.Router
 	routes     map[string]*bindObject
 	server     *http.Server
-	ctxBuilder CtxBuilder
+	ctxBuilder ContextBuilder
 }
 
 type bindObject struct {
@@ -54,7 +56,8 @@ body {
 `
 )
 
-func (b *bindObject) HandleRequest(c CtxData) {
+func (b *bindObject) HandleRequest(ctx context.Context) {
+	c := ctx.Value(CONTEXT_KEY).(Context)
 	defer func() {
 		if e := recover(); e != nil {
 			buf := make([]byte, 4096)
@@ -66,7 +69,7 @@ func (b *bindObject) HandleRequest(c CtxData) {
 			fmt.Println("Stack:\n", stackMsg)
 		}
 	}()
-	b.Method(c)
+	b.Method(ctx, c)
 }
 
 func NewWebApp() *WebApp {
@@ -74,7 +77,7 @@ func NewWebApp() *WebApp {
 	return app.Init()
 }
 
-func (app *WebApp) SetContextBuilder(f CtxBuilder) {
+func (app *WebApp) SetContextBuilder(f ContextBuilder) {
 	app.ctxBuilder = f
 }
 
@@ -130,12 +133,13 @@ func (app *WebApp) Handler(w http.ResponseWriter, req *http.Request) {
 		args[v.Name] = v.Value
 	}
 
-	var c CtxData
-	c = app.ctxBuilder(req, args, bind.(*bindObject).View)
+	ctx := context.Background()
+	ctx = app.ctxBuilder(ctx, req, args, bind.(*bindObject).View)
 
-	bind.(*bindObject).HandleRequest(c)
+	bind.(*bindObject).HandleRequest(ctx)
 
 	// write response
+	c := ctx.Value(CONTEXT_KEY).(Context)
 	c.Res().Write(w)
 
 }

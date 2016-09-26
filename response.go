@@ -1,4 +1,4 @@
-package rocket // import "gopkg.in/acidlemon/rocket.v2"
+package rocket
 
 import (
 	"net/http"
