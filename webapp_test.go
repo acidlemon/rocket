@@ -27,7 +27,6 @@ func TestBasic(t *testing.T) {
 		c.Res().StatusCode = http.StatusOK
 		c.RenderText("Hello World!!")
 	}, view)
-	app.BuildRouter()
 	req, err := http.NewRequest("GET", "/", nil)
 	if err != nil {
 		t.Fatal(err)
@@ -48,7 +47,6 @@ func TestQueryArgs(t *testing.T) {
 		c.Res().StatusCode = http.StatusOK
 		c.RenderText(fmt.Sprintf("Hello %s!!", c.Args()["name"]))
 	}, view)
-	app.BuildRouter()
 	req, err := http.NewRequest("GET", "/powawa", nil)
 	if err != nil {
 		t.Fatal(err)
