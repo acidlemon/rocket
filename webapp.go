@@ -133,7 +133,7 @@ func (app *WebApp) Handler(w http.ResponseWriter, req *http.Request) {
 		args[v.Name] = v.Value
 	}
 
-	ctx := context.Background()
+	ctx := req.Context()
 	ctx = app.ctxBuilder(ctx, req, args, bind.(*bindObject).View)
 
 	bind.(*bindObject).HandleRequest(ctx)

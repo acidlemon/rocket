@@ -1,7 +1,6 @@
 package rocket
 
 import (
-	"context"
 	"net/http"
 	"testing"
 )
@@ -36,7 +35,7 @@ func DummyContext() *c {
 	view := &MockView{}
 	args := Args{}
 
-	ctx := context.Background()
+	ctx := req.Context()
 	ctx = NewContext(ctx, req, args, view)
 	c := ctx.Value(CONTEXT_KEY).(*c)
 
