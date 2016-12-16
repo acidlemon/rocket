@@ -82,7 +82,6 @@ func (app *WebApp) SetContextBuilder(f ContextBuilder) {
 }
 
 func (app *WebApp) Init() *WebApp {
-	app.router = denco.New()
 	app.routes = make(map[string]*bindObject)
 	app.ctxBuilder = NewContext
 
@@ -95,10 +94,12 @@ func (app *WebApp) RegisterController(c Dispatcher) {
 	for k, v := range r {
 		app.routes[k] = v
 	}
+	app.BuildRouter()
 }
 
 func (app *WebApp) AddRoute(path string, bind Handler, view Renderer) {
 	app.routes[path] = &bindObject{bind, view}
+	app.BuildRouter()
 }
 
 func (app *WebApp) BuildRouter() {
@@ -108,7 +109,11 @@ func (app *WebApp) BuildRouter() {
 		records = append(records, denco.NewRecord(k, v))
 	}
 
-	app.router.Build(records)
+	app.router = denco.New()
+	err := app.router.Build(records)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (app *WebApp) Start(listener net.Listener) {
