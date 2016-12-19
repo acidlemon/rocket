@@ -6,7 +6,9 @@ import (
 	"strconv"
 )
 
-const CONTEXT_KEY string = "rocket.Context"
+type contextKey string
+
+const CONTEXT_KEY contextKey = "rocket.Context"
 
 type Context interface {
 	Res() *Response

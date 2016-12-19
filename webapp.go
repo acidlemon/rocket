@@ -8,8 +8,6 @@ import (
 	"runtime"
 
 	"context"
-
-	"github.com/naoina/denco"
 )
 
 type Handler func(context.Context, Context)
@@ -17,8 +15,7 @@ type Handler func(context.Context, Context)
 type ContextBuilder func(ctx context.Context, req *http.Request, args Args, view Renderer) context.Context
 
 type WebApp struct {
-	routes     RouteMap
-	routers    map[string]*denco.Router
+	dispatcher
 	server     *http.Server
 	ctxBuilder ContextBuilder
 }
@@ -72,70 +69,12 @@ func (b *bindObject) HandleRequest(ctx context.Context) {
 	b.Method(ctx, c)
 }
 
-func NewWebApp() *WebApp {
-	app := new(WebApp)
-	return app.Init()
-}
-
 func (app *WebApp) SetContextBuilder(f ContextBuilder) {
 	app.ctxBuilder = f
 }
 
-func (app *WebApp) Init() *WebApp {
-	app.routers = make(map[string]*denco.Router, 8)
-	app.routes = map[string]map[string]*bindObject{
-		MethodAny:          make(map[string]*bindObject),
-		http.MethodGet:     make(map[string]*bindObject),
-		http.MethodPost:    make(map[string]*bindObject),
-		http.MethodHead:    make(map[string]*bindObject),
-		http.MethodPut:     make(map[string]*bindObject),
-		http.MethodPatch:   make(map[string]*bindObject),
-		http.MethodDelete:  make(map[string]*bindObject),
-		http.MethodOptions: make(map[string]*bindObject),
-	}
-	// CONNECT, TRACE is not supported
-
-	app.ctxBuilder = NewContext
-
-	return app
-}
-
 func (app *WebApp) RegisterController(c Controller) {
-	rm := c.FetchRoutes()
-
-	for method, r := range rm {
-		for k, v := range r {
-			app.routes[method][k] = v
-		}
-	}
-
-	app.buildRouter()
-}
-
-func (app *WebApp) AddRoute(path string, bind Handler, view Renderer) {
-	app.routes.AddRoute(path, bind, view)
-	app.buildRouter()
-}
-
-func (app *WebApp) AddRouteMethod(method, path string, bind Handler, view Renderer) {
-	app.routes.AddRouteMethod(method, path, bind, view)
-	app.buildRouter()
-}
-
-func (app *WebApp) buildRouter() {
-	for method, r := range app.routes {
-		records := []denco.Record{}
-
-		for k, v := range r {
-			records = append(records, denco.NewRecord(k, v))
-		}
-
-		app.routers[method] = denco.New()
-		err := app.routers[method].Build(records)
-		if err != nil {
-			panic(err)
-		}
-	}
+	app.mount(c.GetMount(), c.GetRoutes())
 }
 
 func (app *WebApp) Start(listener net.Listener) {
@@ -143,31 +82,27 @@ func (app *WebApp) Start(listener net.Listener) {
 	mux.HandleFunc("/", app.Handler)
 	app.server = &http.Server{Handler: mux}
 
+	if app.ctxBuilder == nil {
+		// set default context builder
+		app.ctxBuilder = NewContext
+	}
+
 	log.Println("listen start:", listener.Addr().String())
 	app.server.Serve(listener)
 }
 
 func (app *WebApp) Handler(w http.ResponseWriter, req *http.Request) {
-	bind, pathParams, found := app.routers[req.Method].Lookup(req.URL.Path)
-	if !found {
-		// fallback
-		bind, pathParams, _ = app.routers[MethodAny].Lookup(req.URL.Path)
-	}
+	bind, args, found := app.Lookup(req.Method, req.URL.Path)
 
-	if bind == nil {
+	if !found {
 		http.NotFound(w, req)
 		return
 	}
 
-	var args = Args{}
-	for _, v := range pathParams {
-		args[v.Name] = v.Value
-	}
-
 	ctx := req.Context()
-	ctx = app.ctxBuilder(ctx, req, args, bind.(*bindObject).View)
+	ctx = app.ctxBuilder(ctx, req, args, bind.View)
 
-	bind.(*bindObject).HandleRequest(ctx)
+	bind.HandleRequest(ctx)
 
 	// write response
 	c := ctx.Value(CONTEXT_KEY).(Context)

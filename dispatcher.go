@@ -3,6 +3,8 @@ package rocket
 import (
 	"fmt"
 	"net/http"
+
+	"github.com/naoina/denco"
 )
 
 const MethodAny string = "any"
@@ -10,39 +12,103 @@ const MethodAny string = "any"
 type Dispatcher interface {
 	AddRoute(path string, bind Handler, view Renderer)
 	AddRouteMethod(method, path string, bind Handler, view Renderer)
+	Lookup(method, path string) (*bindObject, Args, bool)
+	GetRoutes() map[string]map[string]interface{}
 }
 
-type RouteMap map[string]map[string]*bindObject // map[httpMethod]map[route]
+type dispatcher struct {
+	routes  map[string]map[string]interface{} // map[httpMethod]map[route]
+	routers map[string]*denco.Router
+}
 
-func newDispatcher() RouteMap {
-	return RouteMap{
-		MethodAny:          make(map[string]*bindObject),
-		http.MethodGet:     make(map[string]*bindObject),
-		http.MethodPost:    make(map[string]*bindObject),
-		http.MethodHead:    make(map[string]*bindObject),
-		http.MethodPut:     make(map[string]*bindObject),
-		http.MethodPatch:   make(map[string]*bindObject),
-		http.MethodDelete:  make(map[string]*bindObject),
-		http.MethodOptions: make(map[string]*bindObject),
+func (d *dispatcher) init() {
+	d.routes = map[string]map[string]interface{}{
+		MethodAny: make(map[string]interface{}),
+		// CONNECT, TRACE is not supported
+		http.MethodGet:     make(map[string]interface{}),
+		http.MethodPost:    make(map[string]interface{}),
+		http.MethodHead:    make(map[string]interface{}),
+		http.MethodPut:     make(map[string]interface{}),
+		http.MethodPatch:   make(map[string]interface{}),
+		http.MethodDelete:  make(map[string]interface{}),
+		http.MethodOptions: make(map[string]interface{}),
 	}
 }
 
-func (d RouteMap) AddRoute(path string, bind Handler, view Renderer) {
-	d[MethodAny][path] = &bindObject{bind, view}
+func (d *dispatcher) AddRoute(path string, bind Handler, view Renderer) {
+	if d.routes == nil {
+		d.init()
+	}
+
+	d.routes[MethodAny][path] = &bindObject{bind, view}
 }
 
-func (d RouteMap) AddRouteMethod(method, path string, bind Handler, view Renderer) {
+func (d *dispatcher) AddRouteMethod(method, path string, bind Handler, view Renderer) {
+	if d.routes == nil {
+		d.init()
+	}
+
 	switch method {
 	case http.MethodGet, http.MethodHead, http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete, http.MethodOptions:
-		d[method][path] = &bindObject{bind, view}
+		d.routes[method][path] = &bindObject{bind, view}
 	default:
 		// not supported method
 		panic(fmt.Sprintf(`HTTP method %s is not supported`, method))
 	}
 }
 
+func (d *dispatcher) Lookup(method, path string) (*bindObject, Args, bool) {
+	// build it first
+	if d.routers == nil {
+		d.buildRouter()
+	}
+
+	bind, pathParams, found := d.routers[method].Lookup(path)
+	if !found {
+		// fallback
+		bind, pathParams, found = d.routers[MethodAny].Lookup(path)
+	}
+
+	if !found {
+		return nil, Args{}, false
+	}
+
+	var args = Args{}
+	for _, v := range pathParams {
+		args[v.Name] = v.Value
+	}
+
+	return bind.(*bindObject), args, true
+}
+
+func (d *dispatcher) buildRouter() {
+	d.routers = make(map[string]*denco.Router, 8)
+
+	for method, r := range d.routes {
+		records := []denco.Record{}
+
+		for k, v := range r {
+			records = append(records, denco.NewRecord(k, v))
+		}
+
+		d.routers[method] = denco.New()
+		err := d.routers[method].Build(records)
+		if err != nil {
+			panic(err)
+		}
+	}
+}
+
+func (d *dispatcher) mount(mountOn string, target map[string]map[string]interface{}) {
+	for method, route := range target {
+		for path, value := range route {
+			d.routes[method][mountOn+path] = value
+		}
+	}
+}
+
 type controller struct {
-	RouteMap
+	dispatcher
 	mount string
 }
 
@@ -50,28 +116,6 @@ type Controller interface {
 	Dispatcher
 	SetMount(string)
 	GetMount() string
-	FetchRoutes() RouteMap
-}
-
-func NewController() Controller {
-	return &controller{
-		RouteMap: newDispatcher(),
-	}
-}
-
-func (c *controller) FetchRoutes() RouteMap {
-	/*
-		if c.Mount != "" {
-			routes := make(map[string]*bindObject)
-			for k, v := range c.routes {
-				routes[path.Join(c.Mount, k)] = v
-			}
-			return routes
-		} else {
-			return c.routes
-		}
-	*/
-	return c.RouteMap
 }
 
 func (c *controller) SetMount(m string) {
