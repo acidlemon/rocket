@@ -8,8 +8,6 @@ import (
 	"runtime"
 
 	"context"
-
-	"github.com/naoina/denco"
 )
 
 type Handler func(context.Context, Context)
@@ -17,8 +15,7 @@ type Handler func(context.Context, Context)
 type ContextBuilder func(ctx context.Context, req *http.Request, args Args, view Renderer) context.Context
 
 type WebApp struct {
-	router     *denco.Router
-	routes     map[string]*bindObject
+	dispatcher
 	server     *http.Server
 	ctxBuilder ContextBuilder
 }
@@ -72,48 +69,12 @@ func (b *bindObject) HandleRequest(ctx context.Context) {
 	b.Method(ctx, c)
 }
 
-func NewWebApp() *WebApp {
-	app := new(WebApp)
-	return app.Init()
-}
-
 func (app *WebApp) SetContextBuilder(f ContextBuilder) {
 	app.ctxBuilder = f
 }
 
-func (app *WebApp) Init() *WebApp {
-	app.routes = make(map[string]*bindObject)
-	app.ctxBuilder = NewContext
-
-	return app
-}
-
-func (app *WebApp) RegisterController(c Dispatcher) {
-	r := c.FetchRoutes()
-
-	for k, v := range r {
-		app.routes[k] = v
-	}
-	app.BuildRouter()
-}
-
-func (app *WebApp) AddRoute(path string, bind Handler, view Renderer) {
-	app.routes[path] = &bindObject{bind, view}
-	app.BuildRouter()
-}
-
-func (app *WebApp) BuildRouter() {
-	records := []denco.Record{}
-
-	for k, v := range app.routes {
-		records = append(records, denco.NewRecord(k, v))
-	}
-
-	app.router = denco.New()
-	err := app.router.Build(records)
-	if err != nil {
-		panic(err)
-	}
+func (app *WebApp) RegisterController(c Controller) {
+	app.mount(c.GetMount(), c.GetRoutes())
 }
 
 func (app *WebApp) Start(listener net.Listener) {
@@ -121,27 +82,27 @@ func (app *WebApp) Start(listener net.Listener) {
 	mux.HandleFunc("/", app.Handler)
 	app.server = &http.Server{Handler: mux}
 
+	if app.ctxBuilder == nil {
+		// set default context builder
+		app.ctxBuilder = NewContext
+	}
+
 	log.Println("listen start:", listener.Addr().String())
 	app.server.Serve(listener)
 }
 
 func (app *WebApp) Handler(w http.ResponseWriter, req *http.Request) {
-	bind, pathParams, _ := app.router.Lookup(req.URL.Path)
+	bind, args, found := app.Lookup(req.Method, req.URL.Path)
 
-	if bind == nil {
+	if !found {
 		http.NotFound(w, req)
 		return
 	}
 
-	var args = Args{}
-	for _, v := range pathParams {
-		args[v.Name] = v.Value
-	}
-
 	ctx := req.Context()
-	ctx = app.ctxBuilder(ctx, req, args, bind.(*bindObject).View)
+	ctx = app.ctxBuilder(ctx, req, args, bind.View)
 
-	bind.(*bindObject).HandleRequest(ctx)
+	bind.HandleRequest(ctx)
 
 	// write response
 	c := ctx.Value(CONTEXT_KEY).(Context)
