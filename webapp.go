@@ -51,6 +51,30 @@ body {
 </body>
 </html>
 `
+	haltPage = `<!DOCTYPE html>
+<html>
+<head>
+<title>Operation Halted</title>
+<link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+<style type="text/css">
+body {
+    margin:0 20px;
+}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="page-header">
+<h1>Operation Halted</h1>
+</div>
+<div class="panel panel-danger">
+<div class="panel-heading">%v</div>
+<div class="panel-body">
+</div>
+</div>
+</body>
+</html>
+`
 )
 
 func (b *bindObject) HandleRequest(ctx context.Context) {
@@ -58,12 +82,19 @@ func (b *bindObject) HandleRequest(ctx context.Context) {
 	defer func() {
 		if e := recover(); e != nil {
 			buf := make([]byte, 4096)
-			runtime.Stack(buf, false)
-			stackMsg := string(buf)
-			c.Res().StatusCode = http.StatusInternalServerError
-			c.Res().Body = []string{fmt.Sprintf(errorPage, e, stackMsg)}
-			fmt.Println("Error:", e)
-			fmt.Println("Stack:\n", stackMsg)
+
+			switch e.(type) {
+			case Context:
+				c.Res().Body = []string{fmt.Sprintf(haltPage, c.Res().Body[0])}
+
+			default:
+				runtime.Stack(buf, false)
+				stackMsg := string(buf)
+				c.Res().StatusCode = http.StatusInternalServerError
+				c.Res().Body = []string{fmt.Sprintf(errorPage, e, stackMsg)}
+				fmt.Println("Error:", e)
+				fmt.Println("Stack:\n", stackMsg)
+			}
 		}
 	}()
 	b.Method(ctx, c)

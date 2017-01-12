@@ -186,4 +186,5 @@ func (c *c) Render(tmpl string, data RenderVars) {
 func (c *c) Halt(code int, text string) {
 	c.res.StatusCode = code
 	c.res.Body = []string{text}
+	panic(c)
 }
