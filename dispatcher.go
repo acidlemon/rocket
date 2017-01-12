@@ -13,7 +13,6 @@ type Dispatcher interface {
 	AddRoute(path string, bind Handler, view Renderer)
 	AddRouteMethod(method, path string, bind Handler, view Renderer)
 	Lookup(method, path string) (*bindObject, Args, bool)
-	GetRoutes() map[string]map[string]interface{}
 }
 
 type dispatcher struct {
@@ -82,6 +81,9 @@ func (d *dispatcher) Lookup(method, path string) (*bindObject, Args, bool) {
 }
 
 func (d *dispatcher) buildRouter() {
+	if d.routes == nil {
+		d.init()
+	}
 	d.routers = make(map[string]*denco.Router, 8)
 
 	for method, r := range d.routes {
@@ -100,6 +102,10 @@ func (d *dispatcher) buildRouter() {
 }
 
 func (d *dispatcher) mount(mountOn string, target map[string]map[string]interface{}) {
+	if d.routes == nil {
+		d.init()
+	}
+
 	for method, route := range target {
 		for path, value := range route {
 			d.routes[method][mountOn+path] = value
@@ -112,10 +118,15 @@ type controller struct {
 	mount string
 }
 
+func NewController() Controller {
+	return &controller{}
+}
+
 type Controller interface {
 	Dispatcher
 	SetMount(string)
 	GetMount() string
+	GetRoutes() map[string]map[string]interface{}
 }
 
 func (c *controller) SetMount(m string) {
@@ -124,4 +135,8 @@ func (c *controller) SetMount(m string) {
 
 func (c *controller) GetMount() string {
 	return c.mount
+}
+
+func (c *controller) GetRoutes() map[string]map[string]interface{} {
+	return c.dispatcher.routes
 }

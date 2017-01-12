@@ -82,11 +82,6 @@ func (app *WebApp) Start(listener net.Listener) {
 	mux.HandleFunc("/", app.Handler)
 	app.server = &http.Server{Handler: mux}
 
-	if app.ctxBuilder == nil {
-		// set default context builder
-		app.ctxBuilder = NewContext
-	}
-
 	log.Println("listen start:", listener.Addr().String())
 	app.server.Serve(listener)
 }
