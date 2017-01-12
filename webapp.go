@@ -12,7 +12,7 @@ import (
 
 type Handler func(context.Context, Context)
 
-type ContextBuilder func(ctx context.Context, req *http.Request, args Args, view Renderer) context.Context
+type ContextBuilder func(req *http.Request, args Args, view Renderer) (Context, *http.Request)
 
 type WebApp struct {
 	dispatcher
@@ -99,13 +99,15 @@ func (app *WebApp) Handler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	ctx := req.Context()
-	ctx = app.ctxBuilder(ctx, req, args, bind.View)
+	if app.ctxBuilder == nil {
+		// set default context builder
+		app.ctxBuilder = NewContext
+	}
+	c, req := app.ctxBuilder(req, args, bind.View)
 
-	bind.HandleRequest(ctx)
+	bind.HandleRequest(req.Context())
 
 	// write response
-	c := ctx.Value(CONTEXT_KEY).(Context)
 	c.Res().Write(w)
 
 }

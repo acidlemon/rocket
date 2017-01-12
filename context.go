@@ -45,7 +45,7 @@ type c struct {
 type Args map[string]string
 type Params map[string][]string
 
-func NewContext(ctx context.Context, request *http.Request, args Args, renderer Renderer) context.Context {
+func NewContext(request *http.Request, args Args, renderer Renderer) (Context, *http.Request) {
 	request.ParseForm()
 	params := map[string][]string(request.Form)
 
@@ -61,9 +61,10 @@ func NewContext(ctx context.Context, request *http.Request, args Args, renderer 
 		Stash:  map[string]interface{}{},
 	}
 
-	ctx = context.WithValue(ctx, CONTEXT_KEY, myC)
+	ctx := context.WithValue(request.Context(), CONTEXT_KEY, myC)
+	req := request.WithContext(ctx)
 
-	return ctx
+	return myC, req
 }
 
 func (c *c) Res() *Response {

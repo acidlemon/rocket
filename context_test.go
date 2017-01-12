@@ -35,11 +35,8 @@ func DummyContext() *c {
 	view := &MockView{}
 	args := Args{}
 
-	ctx := req.Context()
-	ctx = NewContext(ctx, req, args, view)
-	c := ctx.Value(CONTEXT_KEY).(*c)
-
-	return c
+	ctx, req := NewContext(req, args, view)
+	return ctx.(*c)
 }
 
 func TestRenderer(t *testing.T) {
