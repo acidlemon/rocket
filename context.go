@@ -67,6 +67,10 @@ func NewContext(request *http.Request, args Args, renderer Renderer) (Context, *
 	return myC, req
 }
 
+func GetContext(ctx context.Context) Context {
+	return ctx.Value(CONTEXT_KEY).(Context)
+}
+
 func (c *c) Res() *Response {
 	return c.res
 }
