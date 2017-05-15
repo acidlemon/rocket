@@ -10,7 +10,7 @@ import (
 	"context"
 )
 
-type Handler func(context.Context, Context)
+type Handler func(context.Context)
 
 type ContextBuilder func(req *http.Request, args Args, view Renderer) (Context, *http.Request)
 
@@ -77,7 +77,7 @@ body {
 `
 )
 
-func (b *bindObject) HandleRequest(ctx context.Context) {
+func (b *bindObject) handleRequest(ctx context.Context) {
 	c := ctx.Value(CONTEXT_KEY).(Context)
 	defer func() {
 		if e := recover(); e != nil {
@@ -97,7 +97,7 @@ func (b *bindObject) HandleRequest(ctx context.Context) {
 			}
 		}
 	}()
-	b.Method(ctx, c)
+	b.Method(ctx)
 }
 
 func (app *WebApp) SetContextBuilder(f ContextBuilder) {
@@ -131,7 +131,7 @@ func (app *WebApp) Handler(w http.ResponseWriter, req *http.Request) {
 	}
 	c, req := app.ctxBuilder(req, args, bind.View)
 
-	bind.HandleRequest(req.Context())
+	bind.handleRequest(req.Context())
 
 	// write response
 	c.Res().Write(w)
