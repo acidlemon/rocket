@@ -11,7 +11,7 @@ const MethodAny string = "any"
 
 type Dispatcher interface {
 	AddRoute(path string, bind Handler, m ...Middleware)
-	AddRouteMethod(method, path string, bind Handler, m ...Middleware)
+	AddMethodRoute(method, path string, bind Handler, m ...Middleware)
 	Lookup(method, path string) (*bindObject, Args, bool)
 }
 
@@ -43,7 +43,7 @@ func (d *dispatcher) AddRoute(path string, bind Handler, m ...Middleware) {
 	d.routes[MethodAny][path] = &bindObject{bind, d.view}
 }
 
-func (d *dispatcher) AddRouteMethod(method, path string, bind Handler, m ...Middleware) {
+func (d *dispatcher) AddMethodRoute(method, path string, bind Handler, m ...Middleware) {
 	if d.routes == nil {
 		d.init()
 	}
