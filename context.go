@@ -2,6 +2,7 @@ package rocket
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strconv"
 )
@@ -15,8 +16,8 @@ type Context interface {
 	Req() *http.Request
 	View() Renderer
 	Args() Args
-	Arg(string) (string, bool)
-	MustArg(string) string
+	Arg(string) string
+	ArgInt(string) int64
 	Params() Params
 	Param(string) ([]string, bool)
 	ParamInt(string) ([]int64, bool)
@@ -87,17 +88,30 @@ func (c *c) Args() Args {
 	return c.args
 }
 
-func (c *c) Arg(name string) (string, bool) {
-	value, ok := c.args[name]
+// obsolete
+//func (c *c) Arg(name string) (string, bool) {
+//	value, ok := c.args[name]
+//
+//	return value, ok
+//}
 
-	return value, ok
-}
-
-func (c *c) MustArg(name string) string {
+func (c *c) Arg(name string) string {
 	if value, ok := c.args[name]; !ok {
-		panic("Context.MustArg could not found key: " + name)
+		panic("Context.Arg could not found key: " + name)
 	} else {
 		return value
+	}
+}
+
+func (c *c) ArgInt(name string) int64 {
+	if value, ok := c.args[name]; !ok {
+		panic("Context.ArgInt could not found key: " + name)
+	} else {
+		intval, err := strconv.ParseInt(value, 10, 64)
+		if err != nil {
+			panic(fmt.Sprint("Arg %s is expected as integer, actual value is %s", name, value))
+		}
+		return intval
 	}
 }
 
