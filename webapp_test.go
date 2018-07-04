@@ -85,3 +85,30 @@ func TestQueryArgs(t *testing.T) {
 	}
 
 }
+
+func TestParallelRequests(t *testing.T) {
+	app := prepareWebApp()
+	app.AddRoute("/", func(_ context.Context) {})
+	app.AddRoute("/test", func(_ context.Context) {})
+	reqRoot, err := http.NewRequest("GET", "/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	reqTest, err := http.NewRequest("GET", "/test", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	recRoot, recTest := httptest.NewRecorder(), httptest.NewRecorder()
+	rCh, tCh := make(chan struct{}), make(chan struct{})
+	go func() {
+		app.Handler(recRoot, reqRoot)
+		close(rCh)
+	}()
+	go func() {
+		app.Handler(recTest, reqTest)
+		close(tCh)
+	}()
+	<-rCh
+	<-tCh
+}
