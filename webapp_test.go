@@ -12,17 +12,18 @@ import (
 var view *View = &View{}
 
 func prepareWebApp() *WebApp {
-	app := &WebApp{}
+	app := &WebApp{dispatcher: dispatcher{view: &View{}}}
 	app.SetContextBuilder(NewContext)
 	return app
 }
 
 func TestBasic(t *testing.T) {
 	app := prepareWebApp()
-	app.AddRoute("/", func(ctx context.Context, c Context) {
+	app.AddRoute("/", func(ctx context.Context) {
+		c := GetContext(ctx)
 		c.Res().StatusCode = http.StatusOK
 		c.RenderText("Hello World!!")
-	}, view)
+	})
 	req, err := http.NewRequest("GET", "/", nil)
 	if err != nil {
 		t.Fatal(err)
@@ -41,15 +42,17 @@ func TestQueryArgs(t *testing.T) {
 	app := prepareWebApp()
 
 	// default handler
-	app.AddRoute("/:name", func(ctx context.Context, c Context) {
+	app.AddRoute("/:name", func(ctx context.Context) {
+		c := GetContext(ctx)
 		c.Res().StatusCode = http.StatusOK
 		c.RenderText(fmt.Sprintf("Hello %s!!", c.Args()["name"]))
-	}, view)
+	})
 	// POST handler
-	app.AddRouteMethod(http.MethodPost, "/:name", func(ctx context.Context, c Context) {
+	app.AddMethodRoute(http.MethodPost, "/:name", func(ctx context.Context) {
+		c := GetContext(ctx)
 		c.Res().StatusCode = http.StatusOK
 		c.RenderText(fmt.Sprintf("Hello POST %s!!", c.Args()["name"]))
-	}, view)
+	})
 
 	{
 		req, err := http.NewRequest("GET", "/powawa", nil)

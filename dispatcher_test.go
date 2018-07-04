@@ -9,17 +9,19 @@ import (
 )
 
 func TestDispatcher(t *testing.T) {
-	d := dispatcher{}
+	d := dispatcher{view: &View{}}
 
 	var f, f2 Handler
-	f = func(ctx context.Context, c Context) {
+	f = func(ctx context.Context) {
+		c := GetContext(ctx)
 		c.RenderText("home called")
 	}
-	f2 = func(ctx context.Context, c Context) {
+	f2 = func(ctx context.Context) {
+		c := GetContext(ctx)
 		c.RenderText("patch home called")
 	}
 
-	d.AddRoute("/home", f, &View{})
+	d.AddRoute("/home", f)
 
 	bind, args, found := d.Lookup("GET", "/home")
 	if !found {
@@ -34,7 +36,7 @@ func TestDispatcher(t *testing.T) {
 		t.Fatal("invalid handler")
 	}
 
-	d.AddRouteMethod(http.MethodPatch, "/:type", f2, &View{})
+	d.AddMethodRoute(http.MethodPatch, "/:type", f2)
 	d.buildRouter() // build again
 
 	bind, args, found = d.Lookup("PATCH", "/home")
