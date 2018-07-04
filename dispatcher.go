@@ -3,6 +3,7 @@ package rocket
 import (
 	"fmt"
 	"net/http"
+	"sync"
 
 	"github.com/naoina/denco"
 )
@@ -16,9 +17,12 @@ type Dispatcher interface {
 }
 
 type dispatcher struct {
-	routes  map[string]map[string]interface{} // map[httpMethod]map[route]
-	routers map[string]*denco.Router
-	view    Renderer
+	routes      map[string]map[string]interface{} // map[httpMethod]map[route]
+	routers     map[string]*denco.Router
+	view        Renderer
+	mutex       sync.Mutex
+	onceRoutes  sync.Once
+	onceRouters sync.Once
 }
 
 func (d *dispatcher) init() {
@@ -36,21 +40,21 @@ func (d *dispatcher) init() {
 }
 
 func (d *dispatcher) AddRoute(path string, bind Handler, m ...Middleware) {
-	if d.routes == nil {
-		d.init()
-	}
+	d.onceRoutes.Do(d.init)
 
+	d.mutex.Lock()
 	d.routes[MethodAny][path] = &bindObject{bind, d.view}
+	d.mutex.Unlock()
 }
 
 func (d *dispatcher) AddMethodRoute(method, path string, bind Handler, m ...Middleware) {
-	if d.routes == nil {
-		d.init()
-	}
+	d.onceRoutes.Do(d.init)
 
 	switch method {
 	case http.MethodGet, http.MethodHead, http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete, http.MethodOptions:
+		d.mutex.Lock()
 		d.routes[method][path] = &bindObject{bind, d.view}
+		d.mutex.Unlock()
 	default:
 		// not supported method
 		panic(fmt.Sprintf(`HTTP method %s is not supported`, method))
@@ -59,9 +63,7 @@ func (d *dispatcher) AddMethodRoute(method, path string, bind Handler, m ...Midd
 
 func (d *dispatcher) Lookup(method, path string) (*bindObject, Args, bool) {
 	// build it first
-	if d.routers == nil {
-		d.buildRouter()
-	}
+	d.onceRouters.Do(d.buildRouter)
 
 	bind, pathParams, found := d.routers[method].Lookup(path)
 	if !found {
@@ -82,9 +84,7 @@ func (d *dispatcher) Lookup(method, path string) (*bindObject, Args, bool) {
 }
 
 func (d *dispatcher) buildRouter() {
-	if d.routes == nil {
-		d.init()
-	}
+	d.onceRoutes.Do(d.init)
 	d.routers = make(map[string]*denco.Router, 8)
 
 	for method, r := range d.routes {
@@ -103,13 +103,13 @@ func (d *dispatcher) buildRouter() {
 }
 
 func (d *dispatcher) mount(mountOn string, target map[string]map[string]interface{}) {
-	if d.routes == nil {
-		d.init()
-	}
+	d.onceRoutes.Do(d.init)
 
 	for method, route := range target {
 		for path, value := range route {
+			d.mutex.Lock()
 			d.routes[method][mountOn+path] = value
+			d.mutex.Unlock()
 		}
 	}
 }
